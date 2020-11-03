@@ -3,18 +3,16 @@ import random
 import os
 
 
-def load_image(name, scaleX=-1, scaleY=-1, colorkey=None,):
+def load_image(name, scaleX=-1, scaleY=-1, colorKey=None,):
     path = os.path.join('sprites', name)
     image = pygame.image.load(path)
     image = image.convert()
-    if colorkey is not None:
-        if colorkey is -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-
+    if colorKey is not None:
+        if colorKey is -1:
+            colorKey = image.get_at((0, 0))
+        image.set_colorkey(colorKey)
     if scaleX != -1 or scaleY != -1:
         image = pygame.transform.scale(image, (scaleX, scaleY))
-
     return (image, image.get_rect())
 
 
