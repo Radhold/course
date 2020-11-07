@@ -168,7 +168,8 @@ class Cloud(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(self.containers)
         self.containers = None
-        self.image, self.rect = load_image('cloud.png', 100, 40)
+        self.images, self.rect = load_sprite_sheet('clouds.png', 2, 2, 100, 40)
+        self.image = self.images[random.randrange(0, 4)]
         self.speed = 1
         self.rect.left = width
         self.rect.top = random.randrange(height/4, height/2)
@@ -243,11 +244,11 @@ def gameplay():
         if len(clouds) < 5 and random.randrange(10, 300) == 20:
             Cloud()
 
+        clouds.update()
         player.update()
         ground.update()
         barrier.update()
         coins.update()
-        clouds.update()
         screen.fill(background_col)
         ground.draw()
         coins.draw(screen)
