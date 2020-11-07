@@ -3,7 +3,7 @@ import random
 import os
 
 
-def load_image(name, scaleX=-1, scaleY=-1, colorKey=None, ):
+def load_image(name, scaleX=-1, scaleY=-1, colorKey=None):
     path = os.path.join('sprites', name)
     image = pygame.image.load(path)
     image = image.convert()
@@ -62,7 +62,7 @@ class Player:
         self.isDead = False
         self.isAttack = False
         self.movement = [0, 0]
-        self.jumpSpeed = 11
+        self.jumpSpeed = 15
 
     def draw(self):
         pygame.draw.rect(screen, (255, 255, 255), self.rect)
@@ -96,11 +96,9 @@ class Barrier(pygame.sprite.Sprite):
     def __init__(self, speed=5, sizeX=-1, sizeY=-1):
         super().__init__(self.containers)
         self.containers = None
-        # self.images,
-        self.rect = pygame.Rect((0, 0, 2, 5))
+        self.image, self.rect = load_image('obs.png', sizeX, sizeY)
         self.rect.bottom = int(0.98 * height)
         self.rect.left = width + self.rect.width
-        # self.image = self.images[random.randrange(0, 3)]
         self.movement = [-1 * speed, 0]
 
     def draw(self):
@@ -108,7 +106,6 @@ class Barrier(pygame.sprite.Sprite):
 
     def update(self):
         self.rect = self.rect.move(self.movement)
-
         if self.rect.right < 0:
             self.kill()
 
@@ -126,22 +123,47 @@ pygame.display.set_caption("Run, Vasya, run")
 def gameplay():
     gamespeed = 5
     player = Player()
+    barrier = pygame.sprite.Group()
+    last_obstacle = pygame.sprite.Group()
+    Barrier.containers = barrier
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if player.rect.bottom == int(0.98 * height):
                         player.isJumping = True
                         player.movement[1] = -1 * player.jumpSpeed
+
+        for b in barrier:
+            b.movement[0] = -1 * gamespeed
+            if pygame.sprite.collide_rect(player, b):
+                player.isDead = True
+
+        if len(barrier) < 2:
+            print(len(barrier))
+            if len(barrier) == 0:
+                last_obstacle.empty()
+                last_obstacle.add(Barrier(gamespeed, 20, 40))
+            else:
+                for i in last_obstacle:
+                    if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
+                        last_obstacle.empty()
+                        last_obstacle.add(Barrier(gamespeed, 20, 40))
+
         player.update()
+        barrier.update()
         screen.fill(background_col)
+        barrier.draw(screen)
         player.draw()
         pygame.display.update()
         clock.tick(fps)
 
+        if player.isDead:
+            running = False
+    pygame.quit()
+
 
 gameplay()
-
