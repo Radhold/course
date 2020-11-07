@@ -48,15 +48,100 @@ def load_sprite_sheet(sheetName, cols, rows, scaleX=-1, scaleY=-1, colorKey=None
     return sprites, sprite_rect
 
 
+class Player:
+    def __init__(self, sizeX=-1, sizeY=-1):
+        # self.images =
+        self.rect = pygame.Rect((0, 0, 30, 30))
+        self.rect.bottom = int(0.98 * height)
+        self.rect.left = width / 15
+        # self.image = self.images[0]
+        self.index = 0
+        self.counter = 0
+        self.score = 0
+        self.isJumping = False
+        self.isDead = False
+        self.isAttack = False
+        self.movement = [0, 0]
+        self.jumpSpeed = 11
+
+    def draw(self):
+        pygame.draw.rect(screen, (255, 255, 255), self.rect)
+
+    def checkbound(self):
+        if self.rect.bottom > int(0.98 * height):
+            self.rect.bottom = int(0.98 * height)
+            self.isJumping = False
+
+    def update(self):
+        if self.isJumping:
+            self.movement[1] = self.movement[1] + gravity
+
+        if self.isJumping:
+            pass
+        elif self.isAttack:
+            pass
+        elif self.isDead:
+            pass
+        else:
+            pass
+
+        self.rect = self.rect.move(self.movement)
+        self.checkbound()
+        if not self.isDead and self.counter % 5 == 4:
+            self.score += 1
+        self.counter = (self.counter + 1)
+
+
+class Barrier(pygame.sprite.Sprite):
+    def __init__(self, speed=5, sizeX=-1, sizeY=-1):
+        super().__init__(self.containers)
+        self.containers = None
+        # self.images,
+        self.rect = pygame.Rect((0, 0, 2, 5))
+        self.rect.bottom = int(0.98 * height)
+        self.rect.left = width + self.rect.width
+        # self.image = self.images[random.randrange(0, 3)]
+        self.movement = [-1 * speed, 0]
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+    def update(self):
+        self.rect = self.rect.move(self.movement)
+
+        if self.rect.right < 0:
+            self.kill()
+
+
 pygame.init()
+clock = pygame.time.Clock()
 scrSize = width, height = 600, 200
-FPS = 60
+fps = 60
 gravity = 1
 background_col = 0, 207, 255
 screen = pygame.display.set_mode(scrSize)
-
 pygame.display.set_caption("Run, Vasya, run")
-pygame.display.flip()
-while pygame.event.wait().type != pygame.QUIT:
-    pass
-pygame.quit()
+
+
+def gameplay():
+    gamespeed = 5
+    player = Player()
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if player.rect.bottom == int(0.98 * height):
+                        player.isJumping = True
+                        player.movement[1] = -1 * player.jumpSpeed
+        player.update()
+        screen.fill(background_col)
+        player.draw()
+        pygame.display.update()
+        clock.tick(fps)
+
+
+gameplay()
+
