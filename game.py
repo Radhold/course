@@ -48,11 +48,12 @@ def load_sprite_sheet(sheetName, cols, rows, scaleX=-1, scaleY=-1, colorKey=None
     return sprites, sprite_rect
 
 
-class Player:
+class Player(pygame.sprite.Sprite):
     def __init__(self, sizeX=-1, sizeY=-1):
         # self.images =
+        super().__init__()
         self.rect = pygame.Rect((0, 0, 30, 30))
-        self.rect.bottom = int(0.98 * height)
+        self.rect.bottom = int(0.8 * height)
         self.rect.left = width / 15
         # self.image = self.images[0]
         self.index = 0
@@ -68,13 +69,13 @@ class Player:
         pygame.draw.rect(screen, (255, 255, 255), self.rect)
 
     def checkbound(self):
-        if self.rect.bottom > int(0.98 * height):
-            self.rect.bottom = int(0.98 * height)
+        if self.rect.bottom > int(0.8 * height):
+            self.rect.bottom = int(0.8 * height)
             self.isJumping = False
 
     def update(self):
         if self.isJumping:
-            self.movement[1] = self.movement[1] + gravity
+            self.movement[1] += gravity
 
         if self.isJumping:
             pass
@@ -97,17 +98,71 @@ class Barrier(pygame.sprite.Sprite):
         super().__init__(self.containers)
         self.containers = None
         self.image, self.rect = load_image('obs.png', sizeX, sizeY)
-        self.rect.bottom = int(0.98 * height)
+        self.rect.bottom = int(0.8 * height)
         self.rect.left = width + self.rect.width
         self.movement = [-1 * speed, 0]
+        self.speed = speed
 
     def draw(self):
         screen.blit(self.image, self.rect)
 
     def update(self):
+        self.movement[0] = -1 * self.speed
         self.rect = self.rect.move(self.movement)
         if self.rect.right < 0:
             self.kill()
+
+
+class Coin(pygame.sprite.Sprite):
+    def __init__(self, speed=5, sizeX=-1, sizeY=-1):
+        super().__init__(self.containers)
+        self.containers = None
+        self.images, self.rect = load_sprite_sheet('coin.png', 5, 2, sizeX, sizeY)
+        self.coin_height = [height * 0.64, height * 0.57, height * 0.42]
+        self.rect.centery = self.coin_height[random.randrange(0, 3)]
+        self.rect.left = width + self.rect.width
+        self.image = self.images[0]
+        self.movement = [-1 * speed, 0]
+        self.index = 0
+        self.counter = 0
+        self.speed = speed
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+    def update(self):
+        if self.counter % 10 == 0:
+            self.index = (self.index + 1) % 10
+        self.image = self.images[self.index]
+        self.movement[0] = -1 * self.speed
+        self.rect = self.rect.move(self.movement)
+        self.counter += 1
+        if self.rect.right < 0:
+            self.kill()
+
+
+class Ground:
+    def __init__(self, speed):
+        self.speed = speed
+        self.image, self.rect = load_image('ground.png', 600, 45)
+        self.image1, self.rect1 = load_image('ground.png', 600, 45)
+        self.rect.bottom = height
+        self.rect1.bottom = height
+        self.rect1.left = self.rect.right - self.speed
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+        screen.blit(self.image1, self.rect1)
+
+    def update(self):
+        self.rect.left -= self.speed
+        self.rect1.left -= self.speed
+
+        if self.rect.right < 0:
+            self.rect.left = self.rect1.right - self.speed
+
+        if self.rect1.right < 0:
+            self.rect1.left = self.rect.right - self.speed
 
 
 pygame.init()
@@ -121,11 +176,15 @@ pygame.display.set_caption("Run, Vasya, run")
 
 
 def gameplay():
-    gamespeed = 5
+    gameSpeed = 5
+    counter = 0
     player = Player()
+    ground = Ground(gameSpeed)
     barrier = pygame.sprite.Group()
+    coins = pygame.sprite.Group()
     last_obstacle = pygame.sprite.Group()
     Barrier.containers = barrier
+    Coin.containers = coins
     running = True
     while running:
         for event in pygame.event.get():
@@ -133,33 +192,46 @@ def gameplay():
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    if player.rect.bottom == int(0.98 * height):
+                    if player.rect.bottom == int(0.8 * height):
                         player.isJumping = True
                         player.movement[1] = -1 * player.jumpSpeed
 
         for b in barrier:
-            b.movement[0] = -1 * gamespeed
             if pygame.sprite.collide_rect(player, b):
                 player.isDead = True
 
+        for c in coins:
+            if pygame.sprite.collide_rect(player, c):
+                c.kill()
+
         if len(barrier) < 2:
-            print(len(barrier))
             if len(barrier) == 0:
                 last_obstacle.empty()
-                last_obstacle.add(Barrier(gamespeed, 20, 40))
+                last_obstacle.add(Barrier(gameSpeed, 36, 38))
             else:
                 for i in last_obstacle:
                     if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
                         last_obstacle.empty()
-                        last_obstacle.add(Barrier(gamespeed, 20, 40))
+                        last_obstacle.add(Barrier(gameSpeed, 36, 38))
+
+        if len(coins) == 0 and random.randrange(0, 200) == 10 and counter > 50:
+            for i in last_obstacle:
+                if i.rect.right < width * 0.7:
+                    last_obstacle.empty()
+                    last_obstacle.add(Coin(gameSpeed, 30, 30))
 
         player.update()
+        ground.update()
         barrier.update()
+        coins.update()
         screen.fill(background_col)
+        ground.draw()
+        coins.draw(screen)
         barrier.draw(screen)
         player.draw()
         pygame.display.update()
         clock.tick(fps)
+        counter += 1
 
         if player.isDead:
             running = False
