@@ -118,8 +118,7 @@ class Coin(pygame.sprite.Sprite):
         super().__init__(self.containers)
         self.containers = None
         self.images, self.rect = load_sprite_sheet('coin.png', 5, 2, sizeX, sizeY)
-        self.coin_height = [height * 0.64, height * 0.57, height * 0.42]
-        self.rect.centery = self.coin_height[random.randrange(0, 3)]
+        self.rect.centery = random.randrange(height * 0.42, height * 0.64)
         self.rect.left = width + self.rect.width
         self.image = self.images[0]
         self.movement = [-1 * speed, 0]
@@ -165,6 +164,25 @@ class Ground:
             self.rect1.left = self.rect.right - self.speed
 
 
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(self.containers)
+        self.containers = None
+        self.image, self.rect = load_image('cloud.png', 100, 40)
+        self.speed = 1
+        self.rect.left = width
+        self.rect.top = random.randrange(height/4, height/2)
+        self.movement = [-1 * self.speed, 0]
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+    def update(self):
+        self.rect = self.rect.move(self.movement)
+        if self.rect.right < 0:
+            self.kill()
+
+
 pygame.init()
 clock = pygame.time.Clock()
 scrSize = width, height = 600, 200
@@ -182,9 +200,11 @@ def gameplay():
     ground = Ground(gameSpeed)
     barrier = pygame.sprite.Group()
     coins = pygame.sprite.Group()
+    clouds = pygame.sprite.Group()
     last_obstacle = pygame.sprite.Group()
     Barrier.containers = barrier
     Coin.containers = coins
+    Cloud.containers = clouds
     running = True
     while running:
         for event in pygame.event.get():
@@ -220,14 +240,19 @@ def gameplay():
                     last_obstacle.empty()
                     last_obstacle.add(Coin(gameSpeed, 30, 30))
 
+        if len(clouds) < 5 and random.randrange(10, 300) == 20:
+            Cloud()
+
         player.update()
         ground.update()
         barrier.update()
         coins.update()
+        clouds.update()
         screen.fill(background_col)
         ground.draw()
         coins.draw(screen)
         barrier.draw(screen)
+        clouds.draw(screen)
         player.draw()
         pygame.display.update()
         clock.tick(fps)
