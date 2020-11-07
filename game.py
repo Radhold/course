@@ -241,7 +241,7 @@ def gameplay():
                     last_obstacle.empty()
                     last_obstacle.add(Coin(gameSpeed, 30, 30))
 
-        if len(clouds) < 5 and random.randrange(0, 300) == 9:
+        if len(clouds) < 5 and random.randrange(0, 300) == 10:
             Cloud()
 
         clouds.update()
