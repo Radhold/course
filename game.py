@@ -48,13 +48,28 @@ def load_sprite_sheet(sheetName, cols, rows, scaleX=-1, scaleY=-1, colorKey=None
     return sprites, sprite_rect
 
 
+def extractdigits(number):
+    if number > -1:
+        digits = []
+        while number / 10 != 0:
+            digits.append(number % 10)
+            number = int(number / 10)
+
+        digits.append(number % 10)
+        for i in range(len(digits), 5):
+            digits.append(0)
+        digits.reverse()
+        return digits
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, sizeX=-1, sizeY=-1):
         super().__init__()
         self.images, self.rect = load_sprite_sheet('run.png', 4, 1, sizeX, sizeY)
         self.imagesJump, self.rectJump = load_sprite_sheet('jump.png', 2, 1, sizeX, sizeY)
+        self.imagesDamage, self.rectDamage = load_sprite_sheet('damage.png', 4, 1, sizeX, sizeY)
         self.rect.bottom = int(0.84 * height)
-        self.rect.left = width / 15
+        self.rect.left = width / 18
         self.image = self.images[0]
         self.index = 0
         self.counter = 0
@@ -62,6 +77,7 @@ class Player(pygame.sprite.Sprite):
         self.isJumping = False
         self.isDead = False
         self.isAttack = False
+        self.isDamaged = False
         self.movement = [0, 0]
         self.jumpSpeed = 15
 
@@ -77,7 +93,7 @@ class Player(pygame.sprite.Sprite):
         if self.isJumping:
             self.movement[1] += gravity
 
-        if self.isJumping:
+        if self.isJumping and self.isDamaged is not True:
             if self.movement[1] < 0:
                 self.index = 0
             else:
@@ -86,16 +102,21 @@ class Player(pygame.sprite.Sprite):
             pass
         elif self.isDead:
             pass
+        elif self.isDamaged:
+            if self.counter % 8 == 0:
+                self.index = (self.index + 1) % 4
         else:
             if self.counter % 8 == 0:
                 self.index = (self.index + 1) % 4
 
-        if self.isJumping:
+        if self.isJumping and self.isDamaged is not True:
             self.image = self.imagesJump[self.index]
         elif self.isAttack:
             pass
         elif self.isDead:
             pass
+        elif self.isDamaged:
+            self.image = self.imagesDamage[self.index]
         else:
             self.image = self.images[self.index]
 
@@ -240,7 +261,6 @@ def gameplay():
     healthCount = 3
     healthCountNow = healthCount
     gameQuit = False
-    damaged = False
     objDamaged = None
     player = Player()
     ground = Ground(gameSpeed)
@@ -265,22 +285,22 @@ def gameplay():
                         player.movement[1] = -1 * player.jumpSpeed
 
         for b in barrier:
-            if pygame.sprite.collide_mask(player, b) and damaged is not True:
-                damaged = True
+            if pygame.sprite.collide_mask(player, b) and player.isDamaged is not True:
+                player.isDamaged = True
                 objDamaged = b
                 healthCountNow -= 1
                 healthCopy = pygame.sprite.Group()
                 for i in range(healthCountNow):
-                    healthCopy.add(Health(30, 30, width / 15 + i * width / 15))
+                    healthCopy.add(Health(30, 30, width / 18 + i * width / 18))
                 for j in range(healthCount - healthCountNow):
-                    healthCopy.add(Health(30, 30, (len(healthCopy) + 1) * (width / 15), True))
+                    healthCopy.add(Health(30, 30, (len(healthCopy) + 1) * (width / 18), True))
                 health = healthCopy
                 if healthCountNow == 0:
                     player.isDead = True
 
-        if damaged is True:
+        if player.isDamaged is True:
             if objDamaged.rect.right < player.rect.left:
-                damaged = False
+                player.isDamaged = False
 
         for c in coins:
             if pygame.sprite.collide_mask(player, c):
@@ -288,7 +308,7 @@ def gameplay():
 
         if len(health) < 3:
             for i in range(healthCount):
-                health.add(Health(30, 30, width / 15 + i * width / 15))
+                health.add(Health(30, 30, (width / 18 + i * width / 18)))
 
         if len(barrier) < 2:
             if len(barrier) == 0:
