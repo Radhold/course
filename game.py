@@ -197,6 +197,32 @@ class Cloud(pygame.sprite.Sprite):
             self.kill()
 
 
+class Health(pygame.sprite.Sprite):
+    def __init__(self, sizeX=-1, sizeY=-1, left=-1, dead=False):
+        super().__init__(self.containers)
+        self.containers = None
+        self.images, self.rect = load_sprite_sheet('health.png', 4, 2, sizeX, sizeY)
+        self.emptyImage, self.rect1 = load_image('emptyHealth.png', sizeX, sizeY)
+        self.rect.top = int(0.09 * height)
+        self.rect.left = left
+        self.image = self.images[0]
+        self.index = 0
+        self.counter = 0
+        self.dead = dead
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+    def update(self):
+        if self.dead:
+            self.image = self.emptyImage
+        else:
+            if self.counter % 8 == 0:
+                self.index = (self.index + 1) % 8
+            self.image = self.images[self.index]
+            self.counter += 1
+
+
 pygame.init()
 clock = pygame.time.Clock()
 scrSize = width, height = 600, 200
@@ -210,20 +236,28 @@ pygame.display.set_caption("Run, Vasya, run")
 def gameplay():
     gameSpeed = 5
     counter = 0
+    gameOver = False
+    healthCount = 3
+    healthCountNow = healthCount
+    gameQuit = False
+    damaged = False
+    objDamaged = None
     player = Player()
     ground = Ground(gameSpeed)
     barrier = pygame.sprite.Group()
     coins = pygame.sprite.Group()
     clouds = pygame.sprite.Group()
+    health = pygame.sprite.Group()
     last_obstacle = pygame.sprite.Group()
     Barrier.containers = barrier
     Coin.containers = coins
     Cloud.containers = clouds
-    running = True
-    while running:
+    Health.containers = health
+
+    while not gameOver:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                gameOver = True
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if player.rect.bottom == int(0.84 * height):
@@ -231,12 +265,30 @@ def gameplay():
                         player.movement[1] = -1 * player.jumpSpeed
 
         for b in barrier:
-            if pygame.sprite.collide_mask(player, b):
-                player.isDead = True
+            if pygame.sprite.collide_mask(player, b) and damaged is not True:
+                damaged = True
+                objDamaged = b
+                healthCountNow -= 1
+                healthCopy = pygame.sprite.Group()
+                for i in range(healthCountNow):
+                    healthCopy.add(Health(30, 30, width / 15 + i * width / 15))
+                for j in range(healthCount - healthCountNow):
+                    healthCopy.add(Health(30, 30, (len(healthCopy) + 1) * (width / 15), True))
+                health = healthCopy
+                if healthCountNow == 0:
+                    player.isDead = True
+
+        if damaged is True:
+            if objDamaged.rect.right < player.rect.left:
+                damaged = False
 
         for c in coins:
             if pygame.sprite.collide_mask(player, c):
                 c.kill()
+
+        if len(health) < 3:
+            for i in range(healthCount):
+                health.add(Health(30, 30, width / 15 + i * width / 15))
 
         if len(barrier) < 2:
             if len(barrier) == 0:
@@ -257,13 +309,14 @@ def gameplay():
         if len(clouds) < 5 and random.randrange(0, 600) == 10:
             Cloud()
 
+        health.update()
         clouds.update()
-
         player.update()
         ground.update()
         barrier.update()
         coins.update()
         screen.fill(background_col)
+        health.draw(screen)
         clouds.draw(screen)
         player.draw()
         ground.draw()
@@ -274,7 +327,7 @@ def gameplay():
         counter += 1
 
         if player.isDead:
-            running = False
+            gameOver = True
     pygame.quit()
 
 
