@@ -48,7 +48,7 @@ def load_sprite_sheet(sheetName, cols, rows, scaleX=-1, scaleY=-1, colorKey=None
     return sprites, sprite_rect
 
 
-def extractdigits(number):
+def extractdigits(number, length):
     if number > -1:
         digits = []
         while number / 10 != 0:
@@ -56,10 +56,27 @@ def extractdigits(number):
             number = int(number / 10)
 
         digits.append(number % 10)
-        for i in range(len(digits), 5):
+        for i in range(len(digits), length):
             digits.append(0)
         digits.reverse()
         return digits
+
+
+def displayMessage(image, x, y):
+    rect = image.get_rect()
+    rect.centerx = x
+    rect.top = y
+    screen.blit(image, rect)
+
+
+def healthDamage(hNow, hCount):
+    healthCopy = pygame.sprite.Group()
+    for i in range(hNow):
+        healthCopy.add(Health(30, 30, width / 18 + i * width / 18))
+    for j in range(hCount - hNow):
+        healthCopy.add(Health(30, 30, (len(healthCopy) + 1) * (width / 18), True))
+    group = healthCopy
+    return group
 
 
 class Player(pygame.sprite.Sprite):
@@ -122,7 +139,7 @@ class Player(pygame.sprite.Sprite):
 
         self.rect = self.rect.move(self.movement)
         self.checkbound()
-        if not self.isDead and self.counter % 5 == 4:
+        if not self.isDead and self.counter % 7 == 6:
             self.score += 1
         self.counter = (self.counter + 1)
 
@@ -177,8 +194,8 @@ class Coin(pygame.sprite.Sprite):
 class Ground:
     def __init__(self, speed):
         self.speed = speed
-        self.image, self.rect = load_image('ground.png', width, int(height*0.18))
-        self.image1, self.rect1 = load_image('ground.png', width, int(height*0.18))
+        self.image, self.rect = load_image('ground.png', width, int(height * 0.18))
+        self.image1, self.rect1 = load_image('ground.png', width, int(height * 0.18))
         self.rect.bottom = height
         self.rect1.bottom = height
         self.rect1.left = self.rect.right - self.speed
@@ -206,7 +223,7 @@ class Cloud(pygame.sprite.Sprite):
         self.image = self.images[random.randrange(0, 4)]
         self.speed = 1
         self.rect.left = width
-        self.rect.top = random.randrange(height/4, height/2)
+        self.rect.top = random.randrange(height / 4, height / 2)
         self.movement = [-1 * self.speed, 0]
 
     def draw(self):
@@ -244,14 +261,44 @@ class Health(pygame.sprite.Sprite):
             self.counter += 1
 
 
+class Scoreboard:
+    def __init__(self, x=-1, y=-1, length=5):
+        self.digits, self.digitRect = load_sprite_sheet('digits.png', 10, 1, 11, int(11 * 6 / 5))
+        self.image = pygame.Surface((55, int(11 * 6 / 5)))
+        self.rect = self.image.get_rect()
+        self.length = length
+        if x == -1:
+            self.rect.left = width * 0.89
+        elif x == 0:
+            self.rect.centerx = width / 2
+        else:
+            self.rect.left = x
+        if y == -1:
+            self.rect.top = height * 0.1
+        else:
+            self.rect.top = y
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+    def update(self, score):
+        scoreDigits = extractdigits(score, self.length)
+        self.image.fill(backgroundCol)
+        for s in scoreDigits:
+            self.image.blit(self.digits[s], self.digitRect)
+            self.digitRect.left += self.digitRect.width
+        self.digitRect.left = 0
+
+
 pygame.init()
 clock = pygame.time.Clock()
 scrSize = width, height = 600, 200
 fps = 60
 gravity = 1
-background_col = 0, 207, 255
+backgroundCol = 0, 207, 255
+highScore = 0
 screen = pygame.display.set_mode(scrSize)
-pygame.display.set_caption("Run, Vasya, run")
+pygame.display.set_caption("Running Viking")
 
 
 def gameplay():
@@ -261,93 +308,169 @@ def gameplay():
     healthCount = 3
     healthCountNow = healthCount
     gameQuit = False
+    gameWaiting = False
     objDamaged = None
+    coinsCount = 5
+    scb = Scoreboard()
+    highScb = Scoreboard(width * 0.78)
+    coinsScb = Scoreboard(0, height * 0.13, 2)
     player = Player()
     ground = Ground(gameSpeed)
+
     barrier = pygame.sprite.Group()
     coins = pygame.sprite.Group()
     clouds = pygame.sprite.Group()
     health = pygame.sprite.Group()
     last_obstacle = pygame.sprite.Group()
+
     Barrier.containers = barrier
     Coin.containers = coins
     Cloud.containers = clouds
     Health.containers = health
 
-    while not gameOver:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                gameOver = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    if player.rect.bottom == int(0.84 * height):
-                        player.isJumping = True
-                        player.movement[1] = -1 * player.jumpSpeed
+    tempCoin = Coin(0, 30, 30)
+    tempCoin.rect.centerx = width / 2 - 50
+    tempCoin.rect.top = height * 0.09
 
-        for b in barrier:
-            if pygame.sprite.collide_mask(player, b) and player.isDamaged is not True:
-                player.isDamaged = True
-                objDamaged = b
-                healthCountNow -= 1
-                healthCopy = pygame.sprite.Group()
-                for i in range(healthCountNow):
-                    healthCopy.add(Health(30, 30, width / 18 + i * width / 18))
-                for j in range(healthCount - healthCountNow):
-                    healthCopy.add(Health(30, 30, (len(healthCopy) + 1) * (width / 18), True))
-                health = healthCopy
-                if healthCountNow == 0:
-                    player.isDead = True
+    continueImage, continueRect = load_image('continue.png', 183, 13)
+    replayImage, replayRect = load_image('replay.png', 35, 31)
+    acceptImage, acceptRect = load_image('accept.png', 35, 31)
+    exitImage, exitRect = load_image('exit.png', 35, 31)
+    while not gameQuit:
+        while not gameOver:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    gameOver = True
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        if player.rect.bottom == int(0.84 * height):
+                            player.isJumping = True
+                            player.movement[1] = -1 * player.jumpSpeed
 
-        if player.isDamaged is True:
-            if objDamaged.rect.right < player.rect.left:
-                player.isDamaged = False
+            for b in barrier:
+                if pygame.sprite.collide_mask(player, b) and player.isDamaged is not True:
+                    player.isDamaged = True
+                    objDamaged = b
+                    healthCountNow -= 1
+                    health = healthDamage(healthCountNow, healthCount)
 
-        for c in coins:
-            if pygame.sprite.collide_mask(player, c):
-                c.kill()
+            if player.isDamaged is True:
+                if objDamaged.rect.right < player.rect.left:
+                    player.isDamaged = False
 
-        if len(health) < 3:
-            for i in range(healthCount):
-                health.add(Health(30, 30, (width / 18 + i * width / 18)))
+            for c in coins:
+                if pygame.sprite.collide_mask(player, c) and c is not tempCoin:
+                    coinsCount += 1
+                    c.kill()
 
-        if len(barrier) < 2:
-            if len(barrier) == 0:
-                last_obstacle.empty()
-                last_obstacle.add(Barrier(gameSpeed, 36, 38))
-            else:
-                for i in last_obstacle:
-                    if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
-                        last_obstacle.empty()
-                        last_obstacle.add(Barrier(gameSpeed, 36, 38))
+            if len(health) < 3:
+                for i in range(healthCount):
+                    health.add(Health(30, 30, (width / 18 + i * width / 18)))
 
-        if len(coins) == 0 and random.randrange(0, 200) == 10 and counter > 50:
-            for i in last_obstacle:
-                if i.rect.right < width * 0.7:
+            if len(barrier) < 2:
+                if len(barrier) == 0:
                     last_obstacle.empty()
-                    last_obstacle.add(Coin(gameSpeed, 30, 30))
+                    last_obstacle.add(Barrier(gameSpeed, 36, 38))
+                else:
+                    for i in last_obstacle:
+                        if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
+                            last_obstacle.empty()
+                            last_obstacle.add(Barrier(gameSpeed, 36, 38))
 
-        if len(clouds) < 5 and random.randrange(0, 600) == 10:
-            Cloud()
+            if random.randrange(0, 10) == 5 and counter > 50:
+                for i in last_obstacle:
+                    if i.rect.right < width * 0.7:
+                        last_obstacle.empty()
+                        last_obstacle.add(Coin(gameSpeed, 30, 30))
 
-        health.update()
-        clouds.update()
-        player.update()
-        ground.update()
-        barrier.update()
-        coins.update()
-        screen.fill(background_col)
-        health.draw(screen)
-        clouds.draw(screen)
-        player.draw()
-        ground.draw()
-        coins.draw(screen)
-        barrier.draw(screen)
-        pygame.display.update()
-        clock.tick(fps)
-        counter += 1
+            if len(clouds) < 5 and random.randrange(0, 600) == 10:
+                Cloud()
 
-        if player.isDead:
-            gameOver = True
+            health.update()
+            clouds.update()
+            player.update()
+            ground.update()
+            barrier.update()
+            coins.update()
+            scb.update(player.score)
+            coinsScb.update(coinsCount)
+            highScb.update(highScore)
+            screen.fill(backgroundCol)
+            tempCoin.draw()
+            health.draw(screen)
+            clouds.draw(screen)
+            player.draw()
+            ground.draw()
+            coins.draw(screen)
+            barrier.draw(screen)
+            scb.draw()
+            if highScore != 0:
+                highScb.draw()
+            coinsScb.draw()
+            pygame.display.update()
+            clock.tick(fps)
+            counter += 1
+
+            if healthCountNow == 0:
+                if coinsCount > 3:
+                    gameWaiting = True
+                    gameOver = True
+                else:
+                    print(9)
+                    highScb.update(highScore)
+                    player.isDead = True
+            if player.isDead:
+                gameQuit = True
+                gameOver = True
+
+        if gameQuit:
+            break
+
+        while gameWaiting:
+
+            print(1)
+            for event in pygame.event.get():
+                print(0)
+                if event.type == pygame.QUIT:
+                    print(2)
+                    gameQuit = True
+                    gameOver = False
+                    gameWaiting = False
+                if event.type == pygame.KEYDOWN:
+                    print(3)
+                    if event.key == pygame.K_ESCAPE:
+                        gameQuit = True
+                        print(4)
+                        gameOver = False
+                        gameWaiting = False
+                    if event.key == pygame.K_SPACE:
+                        print(7)
+                        gameWaiting = False
+                        gameOver = False
+                        coinsCount -= 3
+                        healthCountNow += 1
+                        health = healthDamage(healthCountNow, healthCount)
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    print(6)
+                    if acceptRect.collidepoint(pos):
+                        print(7)
+                        gameWaiting = False
+                        gameOver = False
+                        coinsCount -= 3
+                        healthCountNow += 1
+                        health = healthDamage(healthCountNow, healthCount)
+                    elif exitRect.collidepoint(pos):
+                        gameQuit = True
+                        gameOver = False
+                        gameWaiting = False
+                        print(8)
+            displayMessage(continueImage, width / 2, height * 0.4)
+            displayMessage(acceptImage, width / 2 - 30, height * 0.6)
+            displayMessage(exitImage, width / 2 + 30, height * 0.6)
+            pygame.display.update()
+            clock.tick(fps)
+
     pygame.quit()
 
 
