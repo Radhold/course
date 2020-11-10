@@ -93,7 +93,7 @@ class Player(pygame.sprite.Sprite):
         self.image = self.images[0]
         self.index = 0
         self.counter = 0
-        self.score = 0
+        self.score = 900
         self.isJumping = False
         self.isDead = False
         self.isAttack = False
@@ -214,8 +214,8 @@ class Coin(pygame.sprite.Sprite):
 class Ground:
     def __init__(self, speed):
         self.speed = speed
-        self.image, self.rect = load_image('ground.png', width, int(height * 0.18))
-        self.image1, self.rect1 = load_image('ground.png', width, int(height * 0.18))
+        self.image, self.rect = load_image('ground.png', width * 2, int(height * 0.18))
+        self.image1, self.rect1 = load_image('ground.png', width * 2, int(height * 0.18))
         self.rect.bottom = height
         self.rect1.bottom = height
         self.rect1.left = self.rect.right - self.speed
@@ -431,43 +431,43 @@ def gameplay():
 
             for e in enemies:
                 if pygame.sprite.collide_mask(player, e) and player.isDamaged is not True\
-                        and player.isAttack is not True and deathEnemy is not True:
+                        and player.isAttack is not True and deathEnemy is not True and player.isJumping is not True:
                     player.isDamaged = True
                     objDamaged = e
                     healthCountNow -= 1
                     player.index = -1
                     health = healthDamage(healthCountNow, healthCount)
-                if pygame.sprite.collide_mask(player, e) and player.isAttack:
+                if pygame.sprite.collide_mask(player, e) and (player.isAttack or player.isJumping):
                     coinsCount += 1
                     deathEnemy = True
                     tempCounter = counter
                     e.kill()
+            if player.score < 950:
+                if len(health) < 3:
+                    for i in range(healthCount):
+                        health.add(Health(30, 30, (width / 18 + i * width / 18)))
 
-            if len(health) < 3:
-                for i in range(healthCount):
-                    health.add(Health(30, 30, (width / 18 + i * width / 18)))
+                if len(barrier) < 2:
+                    if len(barrier) == 0:
+                        lastObstacle.empty()
+                        lastObstacle.add(Barrier(gameSpeed, 36, 38))
+                    else:
+                        for i in lastObstacle:
+                            if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
+                                lastObstacle.empty()
+                                lastObstacle.add(Barrier(gameSpeed, 36, 38))
 
-            if len(barrier) < 2:
-                if len(barrier) == 0:
-                    lastObstacle.empty()
-                    lastObstacle.add(Barrier(gameSpeed, 36, 38))
-                else:
+                if len(enemies) < 2:
                     for i in lastObstacle:
                         if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
                             lastObstacle.empty()
-                            lastObstacle.add(Barrier(gameSpeed, 36, 38))
+                            lastObstacle.add(Enemy(gameSpeed))
 
-            if len(enemies) < 2:
-                for i in lastObstacle:
-                    if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
-                        lastObstacle.empty()
-                        lastObstacle.add(Enemy(gameSpeed))
-
-            if random.randrange(0, 10) == 5 and counter > 50:
-                for i in lastObstacle:
-                    if i.rect.right < width * 0.7:
-                        lastObstacle.empty()
-                        lastObstacle.add(Coin(gameSpeed, 30, 30))
+                if random.randrange(0, 10) == 5 and counter > 50:
+                    for i in lastObstacle:
+                        if i.rect.right < width * 0.7:
+                            lastObstacle.empty()
+                            lastObstacle.add(Coin(gameSpeed, 30, 30))
 
             if len(clouds) < 10 and random.randrange(0, 600) == 351:
                 Cloud()
@@ -501,11 +501,15 @@ def gameplay():
             if counter - tempCounter > 10:
                 deathEnemy = False
 
-            if player.score % 20 == 19:
+            if player.score % 200 == 199:
                 gameSpeed += 0.1
                 ground.speed += 0.1
 
             counter += 1
+
+            if player.score == 1000:
+                gameOver = True
+                gameQuit = True
 
             if healthCountNow == 0:
                 if coinsCount > 3:
