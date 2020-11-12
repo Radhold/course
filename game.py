@@ -93,7 +93,7 @@ class Player(pygame.sprite.Sprite):
         self.image = self.images[0]
         self.index = 0
         self.counter = 0
-        self.score = 900
+        self.score = 0
         self.isJumping = False
         self.isDead = False
         self.isAttack = False
@@ -171,13 +171,14 @@ class Barrier(pygame.sprite.Sprite):
         self.image, self.rect = load_image('obs.png', sizeX, sizeY)
         self.rect.bottom = int(0.84 * height)
         self.rect.left = width + self.rect.width
-        self.movement = [-1 * speed, 0]
         self.speed = speed
+        self.movement = [-1 * self.speed, 0]
 
     def draw(self):
         screen.blit(self.image, self.rect)
 
-    def update(self):
+    def update(self, speed):
+        self.speed = speed
         self.movement[0] = -1 * self.speed
         self.rect = self.rect.move(self.movement)
         if self.rect.right < 0:
@@ -192,19 +193,21 @@ class Coin(pygame.sprite.Sprite):
         self.rect.centery = random.randrange(height * 0.42, height * 0.64)
         self.rect.left = width + self.rect.width
         self.image = self.images[0]
-        self.movement = [-1 * speed, 0]
+        self.speed = speed
+        self.movement = [-1 * self.speed, 0]
         self.index = 0
         self.counter = 0
-        self.speed = speed
 
     def draw(self):
         screen.blit(self.image, self.rect)
 
-    def update(self):
+    def update(self, speed):
+        if self.speed != 0:
+            self.speed = speed
+        self.movement[0] = -1 * self.speed
         if self.counter % 10 == 0:
             self.index = (self.index + 1) % 10
         self.image = self.images[self.index]
-        self.movement[0] = -1 * self.speed
         self.rect = self.rect.move(self.movement)
         self.counter += 1
         if self.rect.right < 0:
@@ -214,8 +217,8 @@ class Coin(pygame.sprite.Sprite):
 class Ground:
     def __init__(self, speed):
         self.speed = speed
-        self.image, self.rect = load_image('ground.png', width * 2, int(height * 0.18))
-        self.image1, self.rect1 = load_image('ground.png', width * 2, int(height * 0.18))
+        self.image, self.rect = load_image('ground.png', width, int(height * 0.18))
+        self.image1, self.rect1 = load_image('ground.png', width, int(height * 0.18))
         self.rect.bottom = height
         self.rect1.bottom = height
         self.rect1.left = self.rect.right - self.speed
@@ -224,7 +227,8 @@ class Ground:
         screen.blit(self.image, self.rect)
         screen.blit(self.image1, self.rect1)
 
-    def update(self):
+    def update(self, speed):
+        self.speed = speed
         self.rect.left -= self.speed
         self.rect1.left -= self.speed
 
@@ -315,23 +319,39 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__(self.containers)
         self.containers = None
         self.images, self.rect = loadSpriteSheet('enemy.png', 6, 1, sizeX, sizeY)
-        self.rect.bottom = int(0.84 * height)
+        self.deathImage, self.deathRect = load_image('enemyDeath.png', sizeX, sizeY)
+        self.rect.bottom = self.deathRect.bottom = int(0.84 * height)
         self.rect.left = width + self.rect.width
         self.image = self.images[0]
-        self.movement = [-1 * speed, 0]
+        self.death = False
+        self.speed = int(speed)
+        self.movement = [-1 * self.speed, 0]
         self.index = 0
         self.counter = 0
+        self.deathCounter = 0
+        self.flag = False
 
     def draw(self):
         screen.blit(self.image, self.rect)
 
-    def update(self):
-        if self.counter % 12 == 0:
+    def update(self, speed):
+        self.speed = speed
+        print(self.speed)
+        self.movement[0] = -1 * self.speed
+        if self.death and self.flag is False:
+            self.deathCounter = self.counter
+            self.flag = True
+        if self.death is not True and self.counter % 12 == 0:
             self.index = (self.index + 1) % 6
-        self.image = self.images[self.index]
+            self.image = self.images[self.index]
+        elif self.death:
+            self.deathRect.left = self.rect.left
+            self.rect = self.deathRect
+            self.image = self.deathImage
+
         self.rect = self.rect.move(self.movement)
         self.counter = (self.counter + 1)
-        if self.rect.right < 0:
+        if self.rect.right < 0 or (self.death and self.counter - self.deathCounter > 9):
             self.kill()
 
 
@@ -430,18 +450,20 @@ def gameplay():
                     c.kill()
 
             for e in enemies:
-                if pygame.sprite.collide_mask(player, e) and player.isDamaged is not True\
+                if pygame.sprite.collide_mask(player, e) and player.isDamaged is not True \
                         and player.isAttack is not True and deathEnemy is not True and player.isJumping is not True:
                     player.isDamaged = True
                     objDamaged = e
                     healthCountNow -= 1
                     player.index = -1
                     health = healthDamage(healthCountNow, healthCount)
-                if pygame.sprite.collide_mask(player, e) and (player.isAttack or player.isJumping):
-                    coinsCount += 1
+                if pygame.sprite.collide_mask(player, e) and (player.isAttack or
+                                                              player.isJumping and (player.rect.bottom < e.rect.top)):
+                    if e.death is False:
+                        coinsCount += 1
                     deathEnemy = True
+                    e.death = True
                     tempCounter = counter
-                    e.kill()
             if player.score < 950:
                 if len(health) < 3:
                     for i in range(healthCount):
@@ -475,10 +497,10 @@ def gameplay():
             health.update()
             clouds.update()
             player.update()
-            ground.update()
-            barrier.update()
-            coins.update()
-            enemies.update()
+            ground.update(gameSpeed)
+            barrier.update(gameSpeed)
+            coins.update(gameSpeed)
+            enemies.update(gameSpeed)
             scb.update(player.score)
             coinsScb.update(coinsCount)
             highScb.update(highScore)
@@ -500,10 +522,9 @@ def gameplay():
 
             if counter - tempCounter > 10:
                 deathEnemy = False
-
-            if player.score % 200 == 199:
-                gameSpeed += 0.1
-                ground.speed += 0.1
+                
+            if counter % 700 == 699:
+                gameSpeed += 1
 
             counter += 1
 
