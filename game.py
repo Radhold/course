@@ -121,7 +121,7 @@ class Player(pygame.sprite.Sprite):
         if self.isJumping:
             self.movement[1] += gravity
 
-        if self.isJumping and self.isDamaged is not True:
+        if self.isJumping and self.isDamaged is False:
             if self.movement[1] < 0:
                 self.index = 0
             else:
@@ -138,7 +138,7 @@ class Player(pygame.sprite.Sprite):
             if self.counter % 8 == 0:
                 self.index = (self.index + 1) % 4
 
-        if self.isJumping and self.isDamaged is not True:
+        if self.isJumping and self.isDamaged is False:
             self.image = self.imagesJump[self.index]
         elif self.isAttack:
             if self.index != -1:
@@ -330,12 +330,11 @@ class Enemy(pygame.sprite.Sprite):
 
     def update(self, speed):
         self.speed = speed
-        print(self.speed)
         self.movement[0] = -1 * self.speed
         if self.death and self.flag is False:
             self.deathCounter = self.counter
             self.flag = True
-        if self.death is not True and self.counter % 12 == 0:
+        if self.death is False and self.counter % 12 == 0:
             self.index = (self.index + 1) % 6
             self.image = self.images[self.index]
         elif self.death:
@@ -358,6 +357,10 @@ backgroundCol = 0, 207, 255
 highScore = 0
 screen = pygame.display.set_mode(scrSize)
 pygame.display.set_caption("Running Viking")
+
+
+def menu():
+    pass
 
 
 def gameplay():
@@ -399,10 +402,12 @@ def gameplay():
     replayImage, replayRect = load_image('replay.png', int(width / 17), int(height / 6))
     acceptImage, acceptRect = load_image('accept.png', int(width / 17), int(height / 6))
     exitImage, exitRect = load_image('exit.png', int(width / 17), int(height / 6))
+    pauseImage, pauseRect = load_image('pause.png', int(width / 3), int(height / 9))
     setCoordinat(continueRect, width / 2, height * 0.3)
     setCoordinat(acceptRect, width / 2 - 45, height * 0.6)
     setCoordinat(exitRect, width / 2 + 45, height * 0.6)
     setCoordinat(replayRect, width / 2, height * 0.5)
+    setCoordinat(pauseRect, width / 2, height * 0.3)
     while not gameQuit:
         while not gameOver:
             for event in pygame.event.get():
@@ -420,13 +425,28 @@ def gameplay():
                         if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
                             player.isAttack = True
                             player.index = -1
+                    if event.key == pygame.K_p:
+                        pause = True
+                        while pause and gameOver is False:
+                            for ev in pygame.event.get():
+                                if ev.type == pygame.QUIT:
+                                    gameOver = True
+                                    gameQuit = True
+                                if ev.type == pygame.KEYDOWN:
+                                    if ev.key == pygame.K_p:
+                                        pause = False
+                            displayMessage(pauseImage, pauseRect)
+                            pygame.display.update()
+                            pygame.time.delay(100)
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
                         player.isAttack = True
                         player.index = -1
 
             for b in barrier:
-                if pygame.sprite.collide_mask(player, b) and player.isDamaged is not True:
+                if pygame.sprite.collide_mask(player, b) and player.isDamaged is False:
+                    if player.isAttack:
+                        player.isAttack = False
                     player.isDamaged = True
                     objDamaged = b
                     healthCountNow -= 1
@@ -443,8 +463,8 @@ def gameplay():
                     c.kill()
 
             for e in enemies:
-                if pygame.sprite.collide_mask(player, e) and player.isDamaged is not True \
-                        and player.isAttack is not True and deathEnemy is not True and player.isJumping is not True:
+                if pygame.sprite.collide_mask(player, e) and player.isDamaged is False \
+                        and player.isAttack is False and deathEnemy is False and player.isJumping is False:
                     player.isDamaged = True
                     objDamaged = e
                     healthCountNow -= 1
@@ -475,7 +495,7 @@ def gameplay():
 
                 if len(enemies) < 2:
                     for i in lastObstacle:
-                        if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
+                        if i.rect.right < width * 0.7 and random.randrange(0, 300) == 10:
                             lastObstacle.empty()
                             lastObstacle.add(Enemy(gameSpeed))
 
@@ -516,7 +536,7 @@ def gameplay():
 
             if counter - tempCounter > 10:
                 deathEnemy = False
-                
+
             if counter % 700 == 699:
                 gameSpeed += 1
 
@@ -561,6 +581,7 @@ def gameplay():
                     pos = pygame.mouse.get_pos()
                     if acceptRect.collidepoint(pos):
                         gameWaiting = False
+                        gameOver = False
                         coinsCount -= 3
                         healthCountNow += 1
                         health = healthDamage(healthCountNow, healthCount)
@@ -594,6 +615,8 @@ def gameplay():
             displayMessage(replayImage, replayRect)
             pygame.display.update()
             clock.tick(fps)
+            if gameQuit:
+                break
 
     pygame.quit()
 
