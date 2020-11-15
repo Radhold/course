@@ -374,7 +374,7 @@ def gameplay():
     objDamaged = None
     deathEnemy = False
     tempCounter = 0
-    coinsCount = 0
+    coinsCount = 3
     scb = Scoreboard()
     highScb = Scoreboard(width * 0.78)
     coinsScb = Scoreboard(0, height * 0.12, 2)
@@ -398,15 +398,15 @@ def gameplay():
     tempCoin.rect.centerx = width / 2 - 50
     tempCoin.rect.top = height * 0.09
 
-    continueImage, continueRect = load_image('continue.png', int(width / 1.5), int(height / 5))
-    replayImage, replayRect = load_image('replay.png', int(width / 17), int(height / 6))
-    acceptImage, acceptRect = load_image('accept.png', int(width / 17), int(height / 6))
-    exitImage, exitRect = load_image('exit.png', int(width / 17), int(height / 6))
+    continueImage, continueRect = load_image('continue.png', int(width / 3), int(height / 9))
+    replayImage, replayRect = load_image('replay.png', int(width / 20), int(height / 8))
+    acceptImage, acceptRect = load_image('accept.png', int(width / 20), int(height / 8))
+    exitImage, exitRect = load_image('exit.png', int(width / 20), int(height / 8))
     pauseImage, pauseRect = load_image('pause.png', int(width / 3), int(height / 9))
     setCoordinat(continueRect, width / 2, height * 0.3)
-    setCoordinat(acceptRect, width / 2 - 45, height * 0.6)
-    setCoordinat(exitRect, width / 2 + 45, height * 0.6)
-    setCoordinat(replayRect, width / 2, height * 0.5)
+    setCoordinat(acceptRect, width / 2 - 50, height * 0.5)
+    setCoordinat(exitRect, width / 2 + 10, height * 0.5)
+    setCoordinat(replayRect, width / 2 - 30, height * 0.5)
     setCoordinat(pauseRect, width / 2, height * 0.3)
     while not gameQuit:
         while not gameOver:
@@ -547,7 +547,7 @@ def gameplay():
                 gameQuit = True
 
             if healthCountNow == 0:
-                if coinsCount > 3:
+                if coinsCount >= 3:
                     gameWaiting = True
                     gameOver = True
                 else:
