@@ -402,6 +402,7 @@ def gameplay():
     setCoordinat(continueRect, width / 2, height * 0.3)
     setCoordinat(acceptRect, width / 2 - 45, height * 0.6)
     setCoordinat(exitRect, width / 2 + 45, height * 0.6)
+    setCoordinat(replayRect, width / 2, height * 0.5)
     while not gameQuit:
         while not gameOver:
             for event in pygame.event.get():
@@ -456,6 +457,7 @@ def gameplay():
                     deathEnemy = True
                     e.death = True
                     tempCounter = counter
+
             if player.score < 950:
                 if len(health) < 3:
                     for i in range(healthCount):
@@ -477,7 +479,7 @@ def gameplay():
                             lastObstacle.empty()
                             lastObstacle.add(Enemy(gameSpeed))
 
-                if random.randrange(0, 10) == 5 and counter > 50:
+                if random.randrange(0, 300) == 10 and counter > 50:
                     for i in lastObstacle:
                         if i.rect.right < width * 0.7:
                             lastObstacle.empty()
@@ -529,8 +531,8 @@ def gameplay():
                     gameWaiting = True
                     gameOver = True
                 else:
+                    gameOver = True
                     highScb.update(highScore)
-                    player.isDead = True
             if player.isDead:
                 gameQuit = True
                 gameOver = True
@@ -559,17 +561,37 @@ def gameplay():
                     pos = pygame.mouse.get_pos()
                     if acceptRect.collidepoint(pos):
                         gameWaiting = False
-                        gameOver = False
                         coinsCount -= 3
                         healthCountNow += 1
                         health = healthDamage(healthCountNow, healthCount)
                     elif exitRect.collidepoint(pos):
+                        gameOver = True
+                        gameWaiting = False
+            if gameWaiting is True:
+                displayMessage(continueImage, continueRect)
+                displayMessage(acceptImage, acceptRect)
+                displayMessage(exitImage, exitRect)
+                pygame.display.update()
+                clock.tick(fps)
+
+        while gameOver:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    gameQuit = True
+                    gameOver = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
                         gameQuit = True
                         gameOver = False
-                        gameWaiting = False
-            displayMessage(continueImage, continueRect)
-            displayMessage(acceptImage, acceptRect)
-            displayMessage(exitImage, exitRect)
+                    if event.key == pygame.K_SPACE:
+                        gameOver = False
+                        gameplay()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    if replayRect.collidepoint(pos):
+                        gameOver = False
+                        gameplay()
+            displayMessage(replayImage, replayRect)
             pygame.display.update()
             clock.tick(fps)
 
