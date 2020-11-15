@@ -115,8 +115,6 @@ class Player(pygame.sprite.Sprite):
     def checkIndex(self):
         if self.index == 6:
             self.isAttack = False
-            print(self.index)
-            print('третий')
             self.index = 0
 
     def update(self):
@@ -131,8 +129,6 @@ class Player(pygame.sprite.Sprite):
         elif self.isAttack:
             if self.counter % 7 == 0:
                 self.index = (self.index + 1) % 7
-                print(self.index)
-                print('первый')
         elif self.isDead:
             pass
         elif self.isDamaged:
@@ -147,8 +143,6 @@ class Player(pygame.sprite.Sprite):
         elif self.isAttack:
             if self.index != -1:
                 self.image = self.imagesAttack[self.index]
-                print(self.index)
-                print('второй')
         elif self.isDead:
             pass
         elif self.isDamaged:
@@ -424,12 +418,10 @@ def gameplay():
                     if event.key == pygame.K_f:
                         if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
                             player.isAttack = True
-                            print('Attack')
                             player.index = -1
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
                         player.isAttack = True
-                        print('Attack')
                         player.index = -1
 
             for b in barrier:
@@ -537,7 +529,6 @@ def gameplay():
                     gameWaiting = True
                     gameOver = True
                 else:
-                    print(9)
                     highScb.update(highScore)
                     player.isDead = True
             if player.isDead:
@@ -548,24 +539,17 @@ def gameplay():
             break
 
         while gameWaiting:
-
-            print(1)
             for event in pygame.event.get():
-                print(0)
                 if event.type == pygame.QUIT:
-                    print(2)
                     gameQuit = True
                     gameOver = False
                     gameWaiting = False
                 if event.type == pygame.KEYDOWN:
-                    print(3)
                     if event.key == pygame.K_ESCAPE:
                         gameQuit = True
-                        print(4)
                         gameOver = False
                         gameWaiting = False
                     if event.key == pygame.K_SPACE:
-                        print(7)
                         gameWaiting = False
                         gameOver = False
                         coinsCount -= 3
@@ -573,9 +557,7 @@ def gameplay():
                         health = healthDamage(healthCountNow, healthCount)
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos = pygame.mouse.get_pos()
-                    print(6)
                     if acceptRect.collidepoint(pos):
-                        print(7)
                         gameWaiting = False
                         gameOver = False
                         coinsCount -= 3
@@ -585,7 +567,6 @@ def gameplay():
                         gameQuit = True
                         gameOver = False
                         gameWaiting = False
-                        print(8)
             displayMessage(continueImage, continueRect)
             displayMessage(acceptImage, acceptRect)
             displayMessage(exitImage, exitRect)
