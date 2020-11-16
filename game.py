@@ -3,7 +3,7 @@ import random
 import os
 
 
-def load_image(name, scaleX=-1, scaleY=-1, colorKey=None):
+def loadImage(name, scaleX=-1, scaleY=-1, colorKey=None):
     path = os.path.join('sprites', name)
     image = pygame.image.load(path)
     image = image.convert()
@@ -162,7 +162,7 @@ class Barrier(pygame.sprite.Sprite):
     def __init__(self, speed=5, sizeX=-1, sizeY=-1):
         super().__init__(self.containers)
         self.containers = None
-        self.image, self.rect = load_image('obs.png', sizeX, sizeY)
+        self.image, self.rect = loadImage('obs.png', sizeX, sizeY)
         self.rect.bottom = int(0.84 * height)
         self.rect.left = width + self.rect.width
         self.speed = speed
@@ -211,8 +211,8 @@ class Coin(pygame.sprite.Sprite):
 class Ground:
     def __init__(self, speed):
         self.speed = speed
-        self.image, self.rect = load_image('ground.png', width, int(height * 0.18))
-        self.image1, self.rect1 = load_image('ground.png', width, int(height * 0.18))
+        self.image, self.rect = loadImage('ground.png', width, int(height * 0.18))
+        self.image1, self.rect1 = loadImage('ground.png', width, int(height * 0.18))
         self.rect.bottom = height
         self.rect1.bottom = height
         self.rect1.left = self.rect.right - self.speed
@@ -258,7 +258,7 @@ class Health(pygame.sprite.Sprite):
         super().__init__(self.containers)
         self.containers = None
         self.images, self.rect = loadSpriteSheet('health.png', 4, 2, sizeX, sizeY)
-        self.emptyImage, self.rect1 = load_image('emptyHealth.png', sizeX, sizeY)
+        self.emptyImage, self.rect1 = loadImage('emptyHealth.png', sizeX, sizeY)
         self.rect.top = int(0.09 * height)
         self.rect.left = left
         self.image = self.images[0]
@@ -313,7 +313,7 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__(self.containers)
         self.containers = None
         self.images, self.rect = loadSpriteSheet('enemy.png', 6, 1, sizeX, sizeY)
-        self.deathImage, self.deathRect = load_image('enemyDeath.png', sizeX, sizeY)
+        self.deathImage, self.deathRect = loadImage('enemyDeath.png', sizeX, sizeY)
         self.rect.bottom = self.deathRect.bottom = int(0.84 * height)
         self.rect.left = width + self.rect.width
         self.image = self.images[0]
@@ -357,24 +357,59 @@ backgroundCol = 0, 207, 255
 highScore = 0
 screen = pygame.display.set_mode(scrSize)
 pygame.display.set_caption("Running Viking")
+global gameQuit
 
 
 def menu():
-    pass
+    global gameQuit
+    gameStart = False
+    gameQuit = False
+    logoImage, logoRect = loadImage('logo.png', int(width / 2), int(height / 4.5))
+    helpImage, helpRect = loadImage('help.png', int(width / 6), int(height / 10))
+    startImage, startRect = loadImage('start.png', int(width / 6), int(height / 10))
+    exitImage, exitRect = loadImage('exitt.png', int(width / 6), int(height / 10))
+    setCoordinat(logoRect, width / 2, height * 0.1)
+    setCoordinat(helpRect, width / 1.5 - 40, height * 0.5)
+    setCoordinat(startRect, width / 2.5 - 20, height * 0.5)
+    setCoordinat(exitRect, width / 2, height * 0.75)
+    screen.fill(backgroundCol)
+    displayMessage(logoImage, logoRect)
+    displayMessage(startImage, startRect)
+    displayMessage(exitImage, exitRect)
+    displayMessage(helpImage, helpRect)
+    pygame.display.update()
+    pygame.time.delay(1000)
+    while not gameQuit:
+        while not gameStart and not gameQuit:
+            if pygame.display.get_surface() is None:
+                print("Couldn't load display surface 1")
+                gameQuit = True
+                gameStart = True
+            else:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE or event.key == pygame.K_UP:
+                            gameStart = True
+        if not gameQuit:
+            gameplay()
+    pygame.quit()
 
 
 def gameplay():
+    global gameQuit
+    gameQuit = False
     gameSpeed = 4
     counter = 0
     gameOver = False
     healthCount = 3
     healthCountNow = healthCount
-    gameQuit = False
     gameWaiting = False
     objDamaged = None
     deathEnemy = False
     tempCounter = 0
-    coinsCount = 3
+    coinsCount = 0
     scb = Scoreboard()
     highScb = Scoreboard(width * 0.78)
     coinsScb = Scoreboard(0, height * 0.12, 2)
@@ -398,50 +433,57 @@ def gameplay():
     tempCoin.rect.centerx = width / 2 - 50
     tempCoin.rect.top = height * 0.09
 
-    continueImage, continueRect = load_image('continue.png', int(width / 3), int(height / 9))
-    replayImage, replayRect = load_image('replay.png', int(width / 20), int(height / 8))
-    acceptImage, acceptRect = load_image('accept.png', int(width / 20), int(height / 8))
-    exitImage, exitRect = load_image('exit.png', int(width / 20), int(height / 8))
-    pauseImage, pauseRect = load_image('pause.png', int(width / 3), int(height / 9))
+    continueImage, continueRect = loadImage('continue.png', int(width / 3), int(height / 9))
+    replayImage, replayRect = loadImage('replay.png', int(width / 20), int(height / 8))
+    acceptImage, acceptRect = loadImage('accept.png', int(width / 20), int(height / 8))
+    exitImage, exitRect = loadImage('exit.png', int(width / 20), int(height / 8))
+    pauseImage, pauseRect = loadImage('pause.png', int(width / 3), int(height / 9))
     setCoordinat(continueRect, width / 2, height * 0.3)
     setCoordinat(acceptRect, width / 2 - 50, height * 0.5)
-    setCoordinat(exitRect, width / 2 + 10, height * 0.5)
+    setCoordinat(exitRect, width / 2 + 20, height * 0.5)
     setCoordinat(replayRect, width / 2 - 30, height * 0.5)
     setCoordinat(pauseRect, width / 2, height * 0.3)
+    pygame.time.delay(300)
+
     while not gameQuit:
-        while not gameOver:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    gameOver = True
-                    gameQuit = True
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        if player.rect.bottom == int(0.84 * height):
-                            player.isJumping = True
-                            if player.isAttack:
-                                player.isAttack = False
-                            player.movement[1] = -1 * player.jumpSpeed
-                    if event.key == pygame.K_f:
+        while not gameOver and not gameQuit:
+            if pygame.display.get_surface() is None:
+                print("Couldn't load display surface 2")
+                gameQuit = True
+                gameOver = True
+            else:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        gameOver = True
+                        gameQuit = True
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            if player.rect.bottom == int(0.84 * height):
+                                player.isJumping = True
+                                if player.isAttack:
+                                    player.isAttack = False
+                                player.movement[1] = -1 * player.jumpSpeed
+                        if event.key == pygame.K_f:
+                            if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
+                                player.isAttack = True
+                                player.index = -1
+                        if event.key == pygame.K_p:
+                            pause = True
+                            while pause and gameOver is False:
+                                for ev in pygame.event.get():
+                                    if ev.type == pygame.QUIT:
+                                        gameOver = True
+                                        gameQuit = True
+                                    if ev.type == pygame.KEYDOWN:
+                                        if ev.key == pygame.K_p:
+                                            pause = False
+                                displayMessage(pauseImage, pauseRect)
+                                pygame.display.update()
+                                pygame.time.delay(100)
+                    if event.type == pygame.MOUSEBUTTONDOWN:
                         if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
                             player.isAttack = True
                             player.index = -1
-                    if event.key == pygame.K_p:
-                        pause = True
-                        while pause and gameOver is False:
-                            for ev in pygame.event.get():
-                                if ev.type == pygame.QUIT:
-                                    gameOver = True
-                                    gameQuit = True
-                                if ev.type == pygame.KEYDOWN:
-                                    if ev.key == pygame.K_p:
-                                        pause = False
-                            displayMessage(pauseImage, pauseRect)
-                            pygame.display.update()
-                            pygame.time.delay(100)
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
-                        player.isAttack = True
-                        player.index = -1
 
             for b in barrier:
                 if pygame.sprite.collide_mask(player, b) and player.isDamaged is False:
@@ -495,9 +537,9 @@ def gameplay():
 
                 if len(enemies) < 2:
                     for i in lastObstacle:
-                        if i.rect.right < width * 0.7 and random.randrange(0, 300) == 10:
+                        if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
                             lastObstacle.empty()
-                            lastObstacle.add(Enemy(gameSpeed))
+                            lastObstacle.add(Enemy(gameSpeed + 1))
 
                 if random.randrange(0, 300) == 10 and counter > 50:
                     for i in lastObstacle:
@@ -514,25 +556,26 @@ def gameplay():
             ground.update(gameSpeed)
             barrier.update(gameSpeed)
             coins.update(gameSpeed)
-            enemies.update(gameSpeed)
+            enemies.update(gameSpeed + 1)
             scb.update(player.score)
             coinsScb.update(coinsCount)
             highScb.update(highScore)
-            screen.fill(backgroundCol)
-            tempCoin.draw()
-            health.draw(screen)
-            clouds.draw(screen)
-            player.draw()
-            ground.draw()
-            coins.draw(screen)
-            barrier.draw(screen)
-            enemies.draw(screen)
-            scb.draw()
-            if highScore != 0:
-                highScb.draw()
-            coinsScb.draw()
-            pygame.display.update()
-            clock.tick(fps)
+            if pygame.display.get_surface() is not None:
+                screen.fill(backgroundCol)
+                tempCoin.draw()
+                health.draw(screen)
+                clouds.draw(screen)
+                player.draw()
+                ground.draw()
+                coins.draw(screen)
+                barrier.draw(screen)
+                enemies.draw(screen)
+                scb.draw()
+                if highScore != 0:
+                    highScb.draw()
+                coinsScb.draw()
+                pygame.display.update()
+                clock.tick(fps)
 
             if counter - tempCounter > 10:
                 deathEnemy = False
@@ -547,11 +590,10 @@ def gameplay():
                 gameQuit = True
 
             if healthCountNow == 0:
+                gameOver = True
                 if coinsCount >= 3:
                     gameWaiting = True
-                    gameOver = True
                 else:
-                    gameOver = True
                     highScb.update(highScore)
             if player.isDead:
                 gameQuit = True
@@ -561,59 +603,74 @@ def gameplay():
             break
 
         while gameWaiting:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    gameQuit = True
-                    gameOver = False
-                    gameWaiting = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+            if pygame.display.get_surface() is None:
+                print("Couldn't load display surface 3")
+                gameQuit = True
+                gameOver = False
+                gameWaiting = False
+            else:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
                         gameQuit = True
                         gameOver = False
                         gameWaiting = False
-                    if event.key == pygame.K_SPACE:
-                        gameWaiting = False
-                        gameOver = False
-                        coinsCount -= 3
-                        healthCountNow += 1
-                        health = healthDamage(healthCountNow, healthCount)
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    pos = pygame.mouse.get_pos()
-                    if acceptRect.collidepoint(pos):
-                        gameWaiting = False
-                        gameOver = False
-                        coinsCount -= 3
-                        healthCountNow += 1
-                        health = healthDamage(healthCountNow, healthCount)
-                    elif exitRect.collidepoint(pos):
-                        gameOver = True
-                        gameWaiting = False
-            if gameWaiting is True:
-                displayMessage(continueImage, continueRect)
-                displayMessage(acceptImage, acceptRect)
-                displayMessage(exitImage, exitRect)
-                pygame.display.update()
-                clock.tick(fps)
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            gameQuit = True
+                            gameOver = False
+                            gameWaiting = False
+                        if event.key == pygame.K_SPACE:
+                            gameWaiting = False
+                            gameOver = False
+                            coinsCount -= 3
+                            healthCountNow += 1
+                            health = healthDamage(healthCountNow, healthCount)
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        pos = pygame.mouse.get_pos()
+                        if acceptRect.collidepoint(pos):
+                            gameWaiting = False
+                            gameOver = False
+                            coinsCount -= 3
+                            healthCountNow += 1
+                            health = healthDamage(healthCountNow, healthCount)
+                        elif exitRect.collidepoint(pos):
+                            gameOver = True
+                            gameWaiting = False
+                            menu()
+                if gameWaiting is True:
+                    displayMessage(continueImage, continueRect)
+                    displayMessage(acceptImage, acceptRect)
+                    displayMessage(exitImage, exitRect)
+                    pygame.display.update()
+                    clock.tick(fps)
 
-        while gameOver:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    gameQuit = True
-                    gameOver = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+        while gameOver and not gameQuit:
+            if pygame.display.get_surface() is None:
+                print("Couldn't load display surface 4")
+                gameQuit = True
+                gameOver = False
+            else:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
                         gameQuit = True
                         gameOver = False
-                    if event.key == pygame.K_SPACE:
-                        gameOver = False
-                        gameplay()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    pos = pygame.mouse.get_pos()
-                    if replayRect.collidepoint(pos):
-                        gameOver = False
-                        gameplay()
-            displayMessage(replayImage, replayRect)
-            pygame.display.update()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            gameQuit = True
+                            gameOver = False
+                        if event.key == pygame.K_SPACE:
+                            gameQuit = False
+                            gameOver = False
+                            gameplay()
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        pos = pygame.mouse.get_pos()
+                        if replayRect.collidepoint(pos):
+                            gameQuit = False
+                            gameOver = False
+                            gameplay()
+            if pygame.display.get_surface() is not None:
+                displayMessage(replayImage, replayRect)
+                pygame.display.update()
             clock.tick(fps)
             if gameQuit:
                 break
@@ -621,4 +678,4 @@ def gameplay():
     pygame.quit()
 
 
-gameplay()
+menu()
