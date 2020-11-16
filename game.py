@@ -354,7 +354,6 @@ scrSize = width, height = 900, 300
 fps = 60
 gravity = 1
 backgroundCol = 0, 207, 255
-highScore = 0
 screen = pygame.display.set_mode(scrSize)
 pygame.display.set_caption("Running Viking")
 global gameQuit
@@ -398,6 +397,8 @@ def menu():
 
 
 def gameplay():
+    with open('highScore') as f:
+        highScore = int(f.read())
     global gameQuit
     gameQuit = False
     gameSpeed = 4
@@ -411,7 +412,7 @@ def gameplay():
     tempCounter = 0
     coinsCount = 0
     scb = Scoreboard()
-    highScb = Scoreboard(width * 0.78)
+    highScb = Scoreboard(width * 0.80)
     coinsScb = Scoreboard(0, height * 0.12, 2)
     player = Player()
     ground = Ground(gameSpeed)
@@ -433,11 +434,13 @@ def gameplay():
     tempCoin.rect.centerx = width / 2 - 50
     tempCoin.rect.top = height * 0.09
 
+    hiImage, hiRect = loadImage('HI.png', int(width / 51), int(11 * 6 / 5))
     continueImage, continueRect = loadImage('continue.png', int(width / 3), int(height / 9))
     replayImage, replayRect = loadImage('replay.png', int(width / 20), int(height / 8))
     acceptImage, acceptRect = loadImage('accept.png', int(width / 20), int(height / 8))
     exitImage, exitRect = loadImage('exit.png', int(width / 20), int(height / 8))
     pauseImage, pauseRect = loadImage('pause.png', int(width / 3), int(height / 9))
+    setCoordinat(hiRect, width * 0.785, height * 0.1)
     setCoordinat(continueRect, width / 2, height * 0.3)
     setCoordinat(acceptRect, width / 2 - 50, height * 0.5)
     setCoordinat(exitRect, width / 2 + 20, height * 0.5)
@@ -520,32 +523,31 @@ def gameplay():
                     e.death = True
                     tempCounter = counter
 
-            if player.score < 950:
-                if len(health) < 3:
-                    for i in range(healthCount):
-                        health.add(Health(30, 30, (width / 18 + i * width / 18)))
+            if len(health) < 3:
+                for i in range(healthCount):
+                    health.add(Health(30, 30, (width / 18 + i * width / 18)))
 
-                if len(barrier) < 2:
-                    if len(barrier) == 0:
-                        lastObstacle.empty()
-                        lastObstacle.add(Barrier(gameSpeed, 36, 38))
-                    else:
-                        for i in lastObstacle:
-                            if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
-                                lastObstacle.empty()
-                                lastObstacle.add(Barrier(gameSpeed, 36, 38))
-
-                if len(enemies) < 2:
+            if len(barrier) < 2:
+                if len(barrier) == 0:
+                    lastObstacle.empty()
+                    lastObstacle.add(Barrier(gameSpeed, 36, 38))
+                else:
                     for i in lastObstacle:
                         if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
                             lastObstacle.empty()
-                            lastObstacle.add(Enemy(gameSpeed + 1))
+                            lastObstacle.add(Barrier(gameSpeed, 36, 38))
 
-                if random.randrange(0, 300) == 10 and counter > 50:
-                    for i in lastObstacle:
-                        if i.rect.right < width * 0.7:
-                            lastObstacle.empty()
-                            lastObstacle.add(Coin(gameSpeed, 30, 30))
+            if len(enemies) < 2:
+                for i in lastObstacle:
+                    if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
+                        lastObstacle.empty()
+                        lastObstacle.add(Enemy(gameSpeed + 1))
+
+            if random.randrange(0, 300) == 10 and counter > 50:
+                for i in lastObstacle:
+                    if i.rect.right < width * 0.7:
+                        lastObstacle.empty()
+                        lastObstacle.add(Coin(gameSpeed, 30, 30))
 
             if len(clouds) < 10 and random.randrange(0, 600) == 351:
                 Cloud()
@@ -571,9 +573,10 @@ def gameplay():
                 barrier.draw(screen)
                 enemies.draw(screen)
                 scb.draw()
-                if highScore != 0:
-                    highScb.draw()
                 coinsScb.draw()
+                if highScore != 0:
+                    displayMessage(hiImage, hiRect)
+                    highScb.draw()
                 pygame.display.update()
                 clock.tick(fps)
 
@@ -585,20 +588,15 @@ def gameplay():
 
             counter += 1
 
-            if player.score == 1000:
-                gameOver = True
-                gameQuit = True
-
             if healthCountNow == 0:
                 gameOver = True
                 if coinsCount >= 3:
                     gameWaiting = True
                 else:
-                    highScb.update(highScore)
-            if player.isDead:
-                gameQuit = True
-                gameOver = True
-
+                    if player.score > highScore:
+                        highScore = player.score
+                        with open('highScore', 'w') as f:
+                            f.write(str(highScore))
         if gameQuit:
             break
 
@@ -634,6 +632,10 @@ def gameplay():
                             healthCountNow += 1
                             health = healthDamage(healthCountNow, healthCount)
                         elif exitRect.collidepoint(pos):
+                            if player.score > highScore:
+                                highScore = player.score
+                                with open('highScore', 'w') as f:
+                                    f.write(str(highScore))
                             gameOver = True
                             gameWaiting = False
                             menu()
