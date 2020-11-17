@@ -328,7 +328,8 @@ class Enemy(pygame.sprite.Sprite):
         self.movement[0] = -1 * self.speed
         if self.death and self.flag is False:
             self.deathCounter = self.counter
-            deathMusic.play()
+            if pygame.mixer.get_init() is not None:
+                deathMusic.play()
             self.flag = True
 
         if self.death is False and self.counter % 12 == 0:
@@ -366,7 +367,8 @@ global gameQuit
 
 
 def menu():
-    menuMusic.play(-1)
+    if pygame.mixer.get_init() is not None:
+        menuMusic.play(-1)
     global gameQuit
     helpCase = False
     gameStart = False
@@ -436,13 +438,15 @@ def menu():
                             displayMessage(helpImage, helpRect)
                             pygame.display.update()
         if not gameQuit:
-            menuMusic.stop()
+            if pygame.mixer.get_init() is not None:
+                menuMusic.stop()
             gameplay()
     pygame.quit()
 
 
 def gameplay():
-    gameMusic.play(-1)
+    if pygame.mixer.get_init() is not None:
+        gameMusic.play(-1)
     with open('highScore') as f:
         highScore = int(f.read())
     global gameQuit
@@ -510,18 +514,21 @@ def gameplay():
                         if event.key == pygame.K_ESCAPE:
                             gameOver = True
                             gameQuit = True
-                            gameMusic.stop()
+                            if pygame.mixer.get_init() is not None:
+                                gameMusic.stop()
                             menu()
                         if event.key == pygame.K_SPACE:
                             if player.rect.bottom == int(0.84 * height):
-                                jumpMusic.play()
+                                if pygame.mixer.get_init() is not None:
+                                    jumpMusic.play()
                                 player.isJumping = True
                                 if player.isAttack:
                                     player.isAttack = False
                                 player.movement[1] = -1 * player.jumpSpeed
                         if event.key == pygame.K_f:
                             if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
-                                attackMusic.play()
+                                if pygame.mixer.get_init() is not None:
+                                    attackMusic.play()
                                 player.isAttack = True
                                 player.index = -1
                         if event.key == pygame.K_p:
@@ -538,14 +545,16 @@ def gameplay():
                                             pause = False
                                             gameOver = True
                                             gameQuit = True
-                                            gameMusic.stop()
+                                            if pygame.mixer.get_init() is not None:
+                                                gameMusic.stop()
                                             menu()
                                 displayMessage(pauseImage, pauseRect)
                                 pygame.display.update()
                                 pygame.time.delay(100)
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
-                            attackMusic.play()
+                            if pygame.mixer.get_init() is not None:
+                                attackMusic.play()
                             player.isAttack = True
                             player.index = -1
 
@@ -553,7 +562,8 @@ def gameplay():
                 if pygame.sprite.collide_mask(player, b) and player.isDamaged is False:
                     if player.isAttack:
                         player.isAttack = False
-                    damageMusic.play()
+                    if pygame.mixer.get_init() is not None:
+                        damageMusic.play()
                     player.isDamaged = True
                     objDamaged = b
                     healthCountNow -= 1
@@ -563,13 +573,15 @@ def gameplay():
             for c in coins:
                 if pygame.sprite.collide_mask(player, c) and c is not tempCoin:
                     coinsCount += 1
-                    coinMusic.play()
+                    if pygame.mixer.get_init() is not None:
+                        coinMusic.play()
                     c.kill()
 
             for e in enemies:
                 if pygame.sprite.collide_mask(player, e) and player.isDamaged is False \
                         and player.isAttack is False and deathEnemy is False and player.isJumping is False:
-                    damageMusic.play()
+                    if pygame.mixer.get_init() is not None:
+                        damageMusic.play()
                     player.isDamaged = True
                     objDamaged = e
                     healthCountNow -= 1
@@ -653,9 +665,11 @@ def gameplay():
 
             counter += 1
             if player.score % 100 == 0 and player.score % 1000 != 0 and player.counter % 5 == 4:
-                hMusic.play()
+                if pygame.mixer.get_init() is not None:
+                    hMusic.play()
             if player.score % 1000 == 0 and player.counter % 5 == 4:
-                tMusic.play()
+                if pygame.mixer.get_init() is not None:
+                    tMusic.play()
             if healthCountNow == 0:
                 gameOver = True
                 if coinsCount >= 3:
@@ -684,7 +698,8 @@ def gameplay():
                             gameOver = True
                             gameQuit = False
                             gameWaiting = False
-                            gameMusic.stop()
+                            if pygame.mixer.get_init() is not None:
+                                gameMusic.stop()
                             menu()
                         if event.key == pygame.K_SPACE:
                             gameWaiting = False
@@ -707,7 +722,8 @@ def gameplay():
                                     f.write(str(highScore))
                             gameOver = True
                             gameWaiting = False
-                            gameMusic.stop()
+                            if pygame.mixer.get_init() is not None:
+                                gameMusic.stop()
                             menu()
                 if pygame.display.get_surface() is not None:
                     if gameWaiting is True:
@@ -730,24 +746,28 @@ def gameplay():
                         if event.key == pygame.K_ESCAPE:
                             gameQuit = True
                             gameOver = False
-                            gameMusic.stop()
+                            if pygame.mixer.get_init() is not None:
+                                gameMusic.stop()
                             menu()
                         if event.key == pygame.K_SPACE:
                             gameQuit = False
                             gameOver = False
-                            gameMusic.stop()
+                            if pygame.mixer.get_init() is not None:
+                                gameMusic.stop()
                             gameplay()
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         pos = pygame.mouse.get_pos()
                         if replayRect.collidepoint(pos):
                             gameQuit = False
                             gameOver = False
-                            gameMusic.stop()
+                            if pygame.mixer.get_init() is not None:
+                                gameMusic.stop()
                             gameplay()
                         if menuRect.collidepoint(pos):
                             gameQuit = False
                             gameOver = False
-                            gameMusic.stop()
+                            if pygame.mixer.get_init() is not None:
+                                gameMusic.stop()
                             menu()
             if pygame.display.get_surface() is not None:
                 displayMessage(replayImage, replayRect)
