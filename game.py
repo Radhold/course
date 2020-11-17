@@ -95,11 +95,10 @@ class Player(pygame.sprite.Sprite):
         self.counter = 0
         self.score = 0
         self.isJumping = False
-        self.isDead = False
         self.isAttack = False
         self.isDamaged = False
         self.movement = [0, 0]
-        self.jumpSpeed = 15
+        self.jumpSpeed = 16
 
     def draw(self):
         if self.isAttack:
@@ -129,8 +128,6 @@ class Player(pygame.sprite.Sprite):
         elif self.isAttack:
             if self.counter % 7 == 0:
                 self.index = (self.index + 1) % 7
-        elif self.isDead:
-            pass
         elif self.isDamaged:
             if self.counter % 8 == 0:
                 self.index = (self.index + 1) % 4
@@ -143,8 +140,6 @@ class Player(pygame.sprite.Sprite):
         elif self.isAttack:
             if self.index != -1:
                 self.image = self.imagesAttack[self.index]
-        elif self.isDead:
-            pass
         elif self.isDamaged:
             self.image = self.imagesDamage[self.index]
         else:
@@ -153,7 +148,7 @@ class Player(pygame.sprite.Sprite):
         self.checkIndex()
         self.rect = self.rect.move(self.movement)
         self.checkbound()
-        if not self.isDead and self.counter % 7 == 6:
+        if self.counter % 7 == 6:
             self.score += 1
         self.counter = (self.counter + 1)
 
@@ -333,7 +328,10 @@ class Enemy(pygame.sprite.Sprite):
         self.movement[0] = -1 * self.speed
         if self.death and self.flag is False:
             self.deathCounter = self.counter
+            deathMusic.play()
+            print(deathMusic.play())
             self.flag = True
+
         if self.death is False and self.counter % 12 == 0:
             self.index = (self.index + 1) % 6
             self.image = self.images[self.index]
@@ -356,28 +354,42 @@ gravity = 1
 backgroundCol = 0, 207, 255
 screen = pygame.display.set_mode(scrSize)
 pygame.display.set_caption("Running Viking")
+menuMusic = pygame.mixer.Sound('sounds/menu.wav')
+gameMusic = pygame.mixer.Sound('sounds/game.wav')
+coinMusic = pygame.mixer.Sound('sounds/coin.wav')
+attackMusic = pygame.mixer.Sound('sounds/attack.wav')
+hMusic = pygame.mixer.Sound('sounds/100.mp3')
+tMusic = pygame.mixer.Sound('sounds/1000.mp3')
+deathMusic = pygame.mixer.Sound('sounds/death.mp3')
+damageMusic = pygame.mixer.Sound('sounds/damage.mp3')
+jumpMusic = pygame.mixer.Sound('sounds/jump.mp3')
 global gameQuit
 
 
 def menu():
+    menuMusic.play(-1)
     global gameQuit
+    helpCase = False
     gameStart = False
     gameQuit = False
+    menuImage, menuRect = loadImage('menu.png', int(width / 12), int(height / 18))
     logoImage, logoRect = loadImage('logo.png', int(width / 2), int(height / 4.5))
-    helpImage, helpRect = loadImage('help.png', int(width / 6), int(height / 10))
-    startImage, startRect = loadImage('start.png', int(width / 6), int(height / 10))
-    exitImage, exitRect = loadImage('exitt.png', int(width / 6), int(height / 10))
+    helpImage, helpRect = loadImage('help.png', int(width / 6), int(height / 9))
+    helpTextImage, helpTextRect = loadImage('helpText.png', -1, -1)
+    startImage, startRect = loadImage('start.png', int(width / 6), int(height / 9))
+    exitImage, exitRect = loadImage('exitt.png', int(width / 6), int(height / 9))
+    setCoordinat(helpTextRect, width / 2, height - 200)
     setCoordinat(logoRect, width / 2, height * 0.1)
     setCoordinat(helpRect, width / 1.5 - 40, height * 0.5)
     setCoordinat(startRect, width / 2.5 - 20, height * 0.5)
     setCoordinat(exitRect, width / 2, height * 0.75)
+    setCoordinat(menuRect, 50, int(height / 10))
     screen.fill(backgroundCol)
     displayMessage(logoImage, logoRect)
     displayMessage(startImage, startRect)
     displayMessage(exitImage, exitRect)
     displayMessage(helpImage, helpRect)
     pygame.display.update()
-    pygame.time.delay(1000)
     while not gameQuit:
         while not gameStart and not gameQuit:
             if pygame.display.get_surface() is None:
@@ -387,16 +399,52 @@ def menu():
             else:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
-                        pygame.quit()
+                        gameQuit = True
+                        gameStart = True
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_SPACE or event.key == pygame.K_UP:
                             gameStart = True
+                        elif event.key == pygame.K_ESCAPE and helpCase is False:
+                            gameQuit = True
+                            gameStart = True
+                        elif event.key == pygame.K_ESCAPE and helpCase:
+                            helpCase = False
+                            screen.fill(backgroundCol)
+                            displayMessage(logoImage, logoRect)
+                            displayMessage(startImage, startRect)
+                            displayMessage(exitImage, exitRect)
+                            displayMessage(helpImage, helpRect)
+                            pygame.display.update()
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        pos = pygame.mouse.get_pos()
+                        if startRect.collidepoint(pos):
+                            gameStart = True
+                        elif exitRect.collidepoint(pos):
+                            gameQuit = True
+                            gameStart = True
+                        elif helpRect.collidepoint(pos):
+                            helpCase = True
+                            screen.fill(backgroundCol)
+                            displayMessage(helpImage, (width / 2 - 70, height * 0.1, int(width / 6), int(height / 9)))
+                            displayMessage(helpTextImage, helpTextRect)
+                            displayMessage(menuImage, menuRect)
+                            pygame.display.update()
+                        elif menuRect.collidepoint(pos) and helpCase:
+                            helpCase = False
+                            screen.fill(backgroundCol)
+                            displayMessage(logoImage, logoRect)
+                            displayMessage(startImage, startRect)
+                            displayMessage(exitImage, exitRect)
+                            displayMessage(helpImage, helpRect)
+                            pygame.display.update()
         if not gameQuit:
+            menuMusic.stop()
             gameplay()
     pygame.quit()
 
 
 def gameplay():
+    gameMusic.play(-1)
     with open('highScore') as f:
         highScore = int(f.read())
     global gameQuit
@@ -440,11 +488,13 @@ def gameplay():
     acceptImage, acceptRect = loadImage('accept.png', int(width / 20), int(height / 8))
     exitImage, exitRect = loadImage('exit.png', int(width / 20), int(height / 8))
     pauseImage, pauseRect = loadImage('pause.png', int(width / 3), int(height / 9))
+    menuImage, menuRect = loadImage('menu.png', int(width / 12), int(height / 7))
     setCoordinat(hiRect, width * 0.785, height * 0.1)
     setCoordinat(continueRect, width / 2, height * 0.3)
     setCoordinat(acceptRect, width / 2 - 50, height * 0.5)
     setCoordinat(exitRect, width / 2 + 20, height * 0.5)
-    setCoordinat(replayRect, width / 2 - 30, height * 0.5)
+    setCoordinat(replayRect, width / 2 - 30, height * 0.55)
+    setCoordinat(menuRect, width / 2 - 30, height * 0.35)
     setCoordinat(pauseRect, width / 2, height * 0.3)
     pygame.time.delay(300)
 
@@ -460,14 +510,22 @@ def gameplay():
                         gameOver = True
                         gameQuit = True
                     if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            gameOver = True
+                            gameQuit = True
+                            gameMusic.stop()
+                            menu()
                         if event.key == pygame.K_SPACE:
                             if player.rect.bottom == int(0.84 * height):
+                                jumpMusic.play()
+                                print(jumpMusic)
                                 player.isJumping = True
                                 if player.isAttack:
                                     player.isAttack = False
                                 player.movement[1] = -1 * player.jumpSpeed
                         if event.key == pygame.K_f:
                             if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
+                                attackMusic.play()
                                 player.isAttack = True
                                 player.index = -1
                         if event.key == pygame.K_p:
@@ -480,11 +538,18 @@ def gameplay():
                                     if ev.type == pygame.KEYDOWN:
                                         if ev.key == pygame.K_p:
                                             pause = False
+                                        if ev.key == pygame.K_ESCAPE:
+                                            pause = False
+                                            gameOver = True
+                                            gameQuit = True
+                                            gameMusic.stop()
+                                            menu()
                                 displayMessage(pauseImage, pauseRect)
                                 pygame.display.update()
                                 pygame.time.delay(100)
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         if player.isJumping is False and player.isDamaged is False and player.isAttack is False:
+                            attackMusic.play()
                             player.isAttack = True
                             player.index = -1
 
@@ -492,24 +557,23 @@ def gameplay():
                 if pygame.sprite.collide_mask(player, b) and player.isDamaged is False:
                     if player.isAttack:
                         player.isAttack = False
+                    damageMusic.play()
                     player.isDamaged = True
                     objDamaged = b
                     healthCountNow -= 1
                     player.index = -1
                     health = healthDamage(healthCountNow, healthCount)
 
-            if player.isDamaged is True:
-                if objDamaged.rect.right < player.rect.left:
-                    player.isDamaged = False
-
             for c in coins:
                 if pygame.sprite.collide_mask(player, c) and c is not tempCoin:
                     coinsCount += 1
+                    coinMusic.play()
                     c.kill()
 
             for e in enemies:
                 if pygame.sprite.collide_mask(player, e) and player.isDamaged is False \
                         and player.isAttack is False and deathEnemy is False and player.isJumping is False:
+                    damageMusic.play()
                     player.isDamaged = True
                     objDamaged = e
                     healthCountNow -= 1
@@ -519,9 +583,14 @@ def gameplay():
                                                               player.isJumping and (player.rect.bottom < e.rect.top)):
                     if e.death is False:
                         coinsCount += 1
+
                     deathEnemy = True
                     e.death = True
                     tempCounter = counter
+
+            if player.isDamaged is True:
+                if objDamaged.rect.right < player.rect.left:
+                    player.isDamaged = False
 
             if len(health) < 3:
                 for i in range(healthCount):
@@ -533,17 +602,17 @@ def gameplay():
                     lastObstacle.add(Barrier(gameSpeed, 36, 38))
                 else:
                     for i in lastObstacle:
-                        if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
+                        if i.rect.right < width * 0.7 and random.randrange(0, 100) == 10:
                             lastObstacle.empty()
                             lastObstacle.add(Barrier(gameSpeed, 36, 38))
 
             if len(enemies) < 2:
                 for i in lastObstacle:
-                    if i.rect.right < width * 0.7 and random.randrange(0, 50) == 10:
+                    if i.rect.right < width * 0.7 and random.randrange(0, 100) == 10:
                         lastObstacle.empty()
                         lastObstacle.add(Enemy(gameSpeed + 1))
 
-            if random.randrange(0, 300) == 10 and counter > 50:
+            if random.randrange(0, 100) == 10 and counter > 50:
                 for i in lastObstacle:
                     if i.rect.right < width * 0.7:
                         lastObstacle.empty()
@@ -587,7 +656,10 @@ def gameplay():
                 gameSpeed += 1
 
             counter += 1
-
+            if player.score % 100 == 0 and player.score % 1000 != 0 and player.counter % 7 == 6:
+                hMusic.play()
+            if player.score % 1000 == 0 and player.counter % 7 == 6:
+                tMusic.play()
             if healthCountNow == 0:
                 gameOver = True
                 if coinsCount >= 3:
@@ -614,9 +686,11 @@ def gameplay():
                         gameWaiting = False
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_ESCAPE:
-                            gameQuit = True
-                            gameOver = False
+                            gameOver = True
+                            gameQuit = False
                             gameWaiting = False
+                            gameMusic.stop()
+                            menu()
                         if event.key == pygame.K_SPACE:
                             gameWaiting = False
                             gameOver = False
@@ -638,13 +712,15 @@ def gameplay():
                                     f.write(str(highScore))
                             gameOver = True
                             gameWaiting = False
+                            gameMusic.stop()
                             menu()
-                if gameWaiting is True:
-                    displayMessage(continueImage, continueRect)
-                    displayMessage(acceptImage, acceptRect)
-                    displayMessage(exitImage, exitRect)
-                    pygame.display.update()
-                    clock.tick(fps)
+                if pygame.display.get_surface() is not None:
+                    if gameWaiting is True:
+                        displayMessage(continueImage, continueRect)
+                        displayMessage(acceptImage, acceptRect)
+                        displayMessage(exitImage, exitRect)
+                        pygame.display.update()
+                        clock.tick(fps)
 
         while gameOver and not gameQuit:
             if pygame.display.get_surface() is None:
@@ -660,18 +736,28 @@ def gameplay():
                         if event.key == pygame.K_ESCAPE:
                             gameQuit = True
                             gameOver = False
+                            gameMusic.stop()
+                            menu()
                         if event.key == pygame.K_SPACE:
                             gameQuit = False
                             gameOver = False
+                            gameMusic.stop()
                             gameplay()
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         pos = pygame.mouse.get_pos()
                         if replayRect.collidepoint(pos):
                             gameQuit = False
                             gameOver = False
+                            gameMusic.stop()
                             gameplay()
+                        if menuRect.collidepoint(pos):
+                            gameQuit = False
+                            gameOver = False
+                            gameMusic.stop()
+                            menu()
             if pygame.display.get_surface() is not None:
                 displayMessage(replayImage, replayRect)
+                displayMessage(menuImage, menuRect)
                 pygame.display.update()
             clock.tick(fps)
             if gameQuit:
