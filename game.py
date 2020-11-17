@@ -148,9 +148,9 @@ class Player(pygame.sprite.Sprite):
         self.checkIndex()
         self.rect = self.rect.move(self.movement)
         self.checkbound()
-        if self.counter % 7 == 6:
+        if self.counter % 5 == 4:
             self.score += 1
-        self.counter = (self.counter + 1)
+        self.counter += 1
 
 
 class Barrier(pygame.sprite.Sprite):
@@ -329,7 +329,6 @@ class Enemy(pygame.sprite.Sprite):
         if self.death and self.flag is False:
             self.deathCounter = self.counter
             deathMusic.play()
-            print(deathMusic.play())
             self.flag = True
 
         if self.death is False and self.counter % 12 == 0:
@@ -393,7 +392,6 @@ def menu():
     while not gameQuit:
         while not gameStart and not gameQuit:
             if pygame.display.get_surface() is None:
-                print("Couldn't load display surface 1")
                 gameQuit = True
                 gameStart = True
             else:
@@ -501,7 +499,6 @@ def gameplay():
     while not gameQuit:
         while not gameOver and not gameQuit:
             if pygame.display.get_surface() is None:
-                print("Couldn't load display surface 2")
                 gameQuit = True
                 gameOver = True
             else:
@@ -518,7 +515,6 @@ def gameplay():
                         if event.key == pygame.K_SPACE:
                             if player.rect.bottom == int(0.84 * height):
                                 jumpMusic.play()
-                                print(jumpMusic)
                                 player.isJumping = True
                                 if player.isAttack:
                                     player.isAttack = False
@@ -656,9 +652,9 @@ def gameplay():
                 gameSpeed += 1
 
             counter += 1
-            if player.score % 100 == 0 and player.score % 1000 != 0 and player.counter % 7 == 6:
+            if player.score % 100 == 0 and player.score % 1000 != 0 and player.counter % 5 == 4:
                 hMusic.play()
-            if player.score % 1000 == 0 and player.counter % 7 == 6:
+            if player.score % 1000 == 0 and player.counter % 5 == 4:
                 tMusic.play()
             if healthCountNow == 0:
                 gameOver = True
@@ -674,7 +670,6 @@ def gameplay():
 
         while gameWaiting:
             if pygame.display.get_surface() is None:
-                print("Couldn't load display surface 3")
                 gameQuit = True
                 gameOver = False
                 gameWaiting = False
@@ -724,7 +719,6 @@ def gameplay():
 
         while gameOver and not gameQuit:
             if pygame.display.get_surface() is None:
-                print("Couldn't load display surface 4")
                 gameQuit = True
                 gameOver = False
             else:
